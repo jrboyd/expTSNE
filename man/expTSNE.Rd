@@ -6,7 +6,15 @@
 \alias{expTSNE}
 \title{expTSNE}
 \usage{
-expTSNE()
+expTSNE(
+  raw_counts,
+  norm_counts = raw_counts,
+  meta_data = data.frame(names = colnames(raw_counts)),
+  perplexity = 30,
+  seed = 0,
+  selected_rows = rownames(raw_counts),
+  selected_columns = colnames(raw_counts)
+)
 }
 \value{
 
