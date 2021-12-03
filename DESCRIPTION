@@ -1,0 +1,15 @@
+Package: expTSNE
+Type: Package
+Title: Interactive TSNE shiny app for large expression datasets
+Version: 0.0.0
+Authors@R: person("Joseph R", "Boyd", email = "jrboyd@uvm.edu",
+                  role = c("aut", "cre"))
+Description: Interactive TSNE shiny app for large expression datasets
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Suggests:
+Depends: R (>= 3.6), ggplot2, data.table
+Imports:
+RoxygenNote: 7.1.1
+biocViews: Software, RNASeq, MultipleComparison, Sequencing, Visualization
