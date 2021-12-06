@@ -78,7 +78,7 @@ expTSNE.input = function(
 #'
 #' @return
 #' @export
-#'
+#' @rdname expTSNE
 #' @examples
 setClass("expTSNE", 
          slots = c(
@@ -107,10 +107,11 @@ run_TSNE = function(counts, apply_normalization = FALSE, perplexity = 30, seed =
   }
   tsne_res = Rtsne::Rtsne(t(counts), perplexity = perplexity, num_threads = getOption("mc.cores", 1), check_duplicates = FALSE)
   set.seed(NULL)
-
+  
   tsne_df = as.data.table(tsne_res$Y)
   colnames(tsne_df) = c("tx", "ty")
-  tsne_df$sample_id = colnames(counts)
+  tsne_df$column_id = colnames(counts)
+  rownames(tsne_df) = colnames(counts)
   tsne_df
 }
 
@@ -120,7 +121,7 @@ run_TSNE = function(counts, apply_normalization = FALSE, perplexity = 30, seed =
 #'
 #' @return
 #' @export
-#'
+#' @rdname expTSNE
 #' @examples
 expTSNE.runTSNE = function(et){
   tsne_df = run_TSNE(et@norm_counts, perplexity = et@perplexity, seed = et@seed)
@@ -134,3 +135,149 @@ expTSNE.runTSNE = function(et){
       selected_rows = et@selected_rows,
       selected_columns = et@selected_columns)
 }
+
+# setGeneric("expTSNE.save")
+# 
+# setMethod("expTSNE.save", signature = c("expTSNE.input", "character", "logical"), function(et, save_dir, overwrite){
+#   if(dir.exists(save_dir)){
+#     if(!overwrite){
+#       stop("Output already exists.  Run with `overwite = TRUE` to replace.")  
+#     }else{
+#       unlink(save_dir, recursive = TRUE)
+#     }
+#   }
+#   dir.create(save_dir, recursive = TRUE)
+#   write.table(et@raw_counts, file.path(save_dir, "raw_counts.csv"), sep = ",", quote = FALSE)
+#   write.table(et@norm_counts, file.path(save_dir, "norm_counts.csv"), sep = ",", quote = FALSE)
+#   write.table(et@meta_data, file.path(save_dir, "meta_data.csv"), sep = ",", quote = FALSE)
+#   write(et@perplexity, file = file.path(save_dir, "perplexity.txt"))
+#   if(is.null(et@seed)){
+#     write("NULL", file = file.path(save_dir, "seed.txt"))  
+#   }else{
+#     write(et@seed, file = file.path(save_dir, "seed.txt"))  
+#   }
+#   write(et@selected_rows, file = file.path(save_dir, "selected_rows.txt"))
+#   write(et@selected_columns, file = file.path(save_dir, "selected_columns.txt"))
+# })
+# 
+# setMethod("expTSNE.save", signature = c("expTSNE", "character", "logical"), function(et, save_dir, overwrite){
+#   if(dir.exists(save_dir)){
+#     if(!overwrite){
+#       stop("Output already exists.  Run with `overwite = TRUE` to replace.")  
+#     }else{
+#       unlink(save_dir, recursive = TRUE)
+#     }
+#   }
+#   dir.create(save_dir, recursive = TRUE)
+#   write.table(et@raw_counts, file.path(save_dir, "raw_counts.csv"), sep = ",", quote = FALSE)
+#   write.table(et@norm_counts, file.path(save_dir, "norm_counts.csv"), sep = ",", quote = FALSE)
+#   write.table(et@meta_data, file.path(save_dir, "meta_data.csv"), sep = ",", quote = FALSE)
+#   write(et@perplexity, file = file.path(save_dir, "perplexity.txt"))
+#   if(is.null(et@seed)){
+#     write("NULL", file = file.path(save_dir, "seed.txt"))  
+#   }else{
+#     write(et@seed, file = file.path(save_dir, "seed.txt"))  
+#   }
+#   write(et@selected_rows, file = file.path(save_dir, "selected_rows.txt"))
+#   write(et@selected_columns, file = file.path(save_dir, "selected_columns.txt"))
+#   write(et@selected_columns, file = file.path(save_dir, "selected_columns.txt"))
+# })
+
+#' expTSNE.save
+#'
+#' @param et
+#' @param save_dir
+#' @param overwrite
+#'
+#' @return
+#' @export
+#' @rdname expTSNE
+#' @examples
+#' test_counts = matrix(runif(10000), nrow = 10, ncol = 1000)
+#' rownames(test_counts) = paste("row", seq_len(nrow(test_counts)))
+#' colnames(test_counts) = paste("col", seq_len(ncol(test_counts)))
+#'
+#' et = expTSNE.input(test_counts)
+#' et.run = expTSNE.runTSNE(et)
+#'
+#' expTSNE.save(et, "test_output")
+#' expTSNE.save(et.run, "test_output.tsne")
+expTSNE.save = function(et, save_dir, overwrite = FALSE){
+  if(dir.exists(save_dir)){
+    if(!overwrite){
+      stop("Output already exists.  Run with `overwite = TRUE` to replace.")
+    }else{
+      unlink(save_dir, recursive = TRUE)
+    }
+  }
+  dir.create(save_dir, recursive = TRUE)
+  write.table(et@raw_counts, file.path(save_dir, "raw_counts.csv"), sep = ",", quote = FALSE)
+  write.table(et@norm_counts, file.path(save_dir, "norm_counts.csv"), sep = ",", quote = FALSE)
+  write.table(et@meta_data, file.path(save_dir, "meta_data.csv"), sep = ",", quote = FALSE)
+  write(et@perplexity, file = file.path(save_dir, "perplexity.txt"))
+  if(is.null(et@seed)){
+    write("NULL", file = file.path(save_dir, "seed.txt"))
+  }else{
+    write(et@seed, file = file.path(save_dir, "seed.txt"))
+  }
+  write(et@selected_rows, file = file.path(save_dir, "selected_rows.txt"))
+  write(et@selected_columns, file = file.path(save_dir, "selected_columns.txt"))
+  
+  if(is(et, "expTSNE")){
+    write.table(et@tsne_result, file.path(save_dir, "tsne_result.csv"), sep = ",", quote = FALSE)  
+  }
+}
+
+#' expTSNE.load
+#'
+#' @param et 
+#' @param save_dir 
+#'
+#' @return
+#' @export
+#' @rdname expTSNE
+#' @examples
+#' et = expTSNE.load("test_output")
+#' et.tsne = expTSNE.load("test_output.tsne")
+expTSNE.load = function(save_dir){
+  raw_counts = as.matrix(read.table(file.path(save_dir, "raw_counts.csv"), sep = ",", as.is = TRUE, check.names = FALSE))
+  norm_counts = as.matrix(read.table(file.path(save_dir, "norm_counts.csv"), sep = ",", as.is = TRUE, check.names = FALSE))
+  meta_data = read.table(file.path(save_dir, "meta_data.csv"), sep = ",", as.is = TRUE, check.names = FALSE)
+  perplexity = read.table(file.path(save_dir, "perplexity.txt"))[[1]]
+  seed = read.table(file.path(save_dir, "seed.txt"), as.is = TRUE)[[1]]
+  if(seed == "NULL") seed = NULL
+  selected_rows = read.table(file.path(save_dir, "selected_rows.txt"), as.is = TRUE, sep = "\t")[[1]]
+  selected_columns = read.table(file.path(save_dir, "selected_columns.txt"), as.is = TRUE, sep = "\t")[[1]]
+  
+  if(file.exists(file.path(save_dir, "tsne_result.csv"))){
+    tsne_result = read.table(file.path(save_dir, "tsne_result.csv"), sep = ",", as.is = TRUE, check.names = FALSE)
+    new("expTSNE",
+      raw_counts = raw_counts,
+      norm_counts = norm_counts, 
+      meta_data = meta_data, 
+      perplexity = perplexity, 
+      seed = seed, 
+      selected_rows = selected_rows, 
+      selected_columns = selected_columns,
+      tsne_result = tsne_result
+    )
+  }else{
+    expTSNE.input(
+      raw_counts = raw_counts,
+      norm_counts = norm_counts, 
+      meta_data = meta_data, 
+      perplexity = perplexity, 
+      seed = seed, 
+      selected_rows = selected_rows, 
+      selected_columns = selected_columns
+    )
+  }
+}
+
+setMethod("show", "expTSNE.input", function(object){
+  message("I am an expTSNE.input")
+})
+
+setMethod("show", "expTSNE", function(object){
+  message("I am an expTSNE")
+})

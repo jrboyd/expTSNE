@@ -4,6 +4,10 @@
 \name{expTSNE.input-class}
 \alias{expTSNE.input-class}
 \alias{expTSNE.input}
+\alias{expTSNE-class}
+\alias{expTSNE.runTSNE}
+\alias{expTSNE.save}
+\alias{expTSNE.load}
 \title{expTSNE.input}
 \usage{
 expTSNE.input(
@@ -16,8 +20,29 @@ expTSNE.input(
   selected_rows = rownames(raw_counts),
   selected_columns = colnames(raw_counts)
 )
+
+expTSNE.runTSNE(et)
+
+expTSNE.save(et, save_dir, overwrite = FALSE)
+
+expTSNE.load(save_dir)
+}
+\arguments{
+\item{et}{}
+
+\item{save_dir}{}
+
+\item{overwrite}{}
 }
 \value{
+
+
+
+
+
+
+
+
 
 
 
@@ -26,6 +51,14 @@ expTSNE.input(
 expTSNE.input
 
 expTSNE.input
+
+expTSNE
+
+expTSNE.runTSNE
+
+expTSNE.save
+
+expTSNE.load
 }
 \section{Slots}{
 
@@ -43,6 +76,8 @@ expTSNE.input
 \item{\code{selected_rows}}{character.}
 
 \item{\code{selected_columns}}{character.}
+
+\item{\code{tsne_result}}{data.frame.}
 }}
 
 \examples{
@@ -53,4 +88,13 @@ colnames(test_counts) = paste("col", seq_len(ncol(test_counts)))
 et = expTSNE.input(test_counts)
 et = expTSNE.runTSNE(et)
 expTSNE.runApp(et)
+test_counts = matrix(runif(10000), nrow = 10, ncol = 1000)
+rownames(test_counts) = paste("row", seq_len(nrow(test_counts)))
+colnames(test_counts) = paste("col", seq_len(ncol(test_counts)))
+
+et = expTSNE.input(test_counts)
+et.run = expTSNE.runTSNE(et)
+
+save_dir = "test_output"
+save_dir = "test_output"
 }
