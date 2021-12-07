@@ -242,7 +242,7 @@ expTSNE.save = function(et, save_dir, overwrite = FALSE){
 expTSNE.load = function(save_dir){
   raw_counts = as.matrix(read.table(file.path(save_dir, "raw_counts.csv"), sep = ",", as.is = TRUE, check.names = FALSE))
   norm_counts = as.matrix(read.table(file.path(save_dir, "norm_counts.csv"), sep = ",", as.is = TRUE, check.names = FALSE))
-  meta_data = read.table(file.path(save_dir, "meta_data.csv"), sep = ",", as.is = TRUE, check.names = FALSE)
+  meta_data = read.table(file.path(save_dir, "meta_data.csv"), sep = ",", check.names = FALSE)
   perplexity = read.table(file.path(save_dir, "perplexity.txt"))[[1]]
   seed = read.table(file.path(save_dir, "seed.txt"), as.is = TRUE)[[1]]
   if(seed == "NULL") seed = NULL
