@@ -1,7 +1,7 @@
 
 #' expTSNE.runApp
 #'
-#' @param et 
+#' @param et expTSNE object
 #'
 #' @return
 #' @export

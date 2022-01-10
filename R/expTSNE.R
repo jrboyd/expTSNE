@@ -1,5 +1,27 @@
 setClassUnion("numericOrNull", c("numeric", "NULL"))
 
+.check_valid_expTSNE = function(et){
+  msg = character()
+  if(is.null(rownames(et@raw_counts))) msg = c(msg, "raw_counts must have rownames.")
+  if(is.null(colnames(et@raw_counts))) msg = c(msg, "raw_counts must have colnames.")
+  if(is.null(et@selected_rows)) msg = c(msg, "selected_rows cannot be NULL.")
+  if(is.null(et@selected_columns)) msg = c(msg, "selected_columns cannot be NULL.")
+  if(!all(et@selected_rows %in% rownames(et@raw_counts))) msg = c(msg, "selected_rows must all be in rownames.")
+  if(!all(et@selected_columns %in% colnames(et@raw_counts))) msg = c(msg, "selected_columns must all be in colnames.")
+  if(!all(ncol(et@raw_counts) == ncol(et@norm_counts))) msg = c(msg, "norm_counts and raw_counts colnames must be equal.")
+  if(!all(nrow(et@raw_counts) == nrow(et@norm_counts))) msg = c(msg, "norm_counts and raw_counts rownames must be equal.")
+  if(!all(colnames(et@raw_counts) == colnames(et@norm_counts))) msg = c(msg, "norm_counts and raw_counts colnames must be equal.")
+  if(!all(rownames(et@raw_counts) == rownames(et@norm_counts))) msg = c(msg, "norm_counts and raw_counts rownames must be equal.")
+  if(nrow(et@meta_data) != ncol(et@raw_counts)) msg = c(msg, "meta_data must have one row per column in raw_counts.")
+  if(is.null(rownames(et@meta_data))) msg = c(msg, "meta_data must have rownames.")
+  if(!all(rownames(et@meta_data) == colnames(et@raw_counts))) msg = c(msg, "meta_data rownames must equal raw_counts colnames.")
+  if(length(msg) > 0){
+    return(msg)
+  }else{
+    return(TRUE)
+  }
+}
+
 #https://bioconductor.org/packages/release/bioc/vignettes/SummarizedExperiment/inst/doc/Extensions.html
 # https://bioconductor.riken.jp/packages/3.8/bioc/vignettes/SummarizedExperiment/inst/doc/Extensions.html
 #' expTSNE.input
@@ -24,8 +46,11 @@ setClass("expTSNE.input",
            seed = "numericOrNull",
            selected_rows = "character",
            selected_columns = "character"
-         )
+         ),
+         validity = .check_valid_expTSNE
 )
+
+
 
 #' expTSNE.input
 #'
@@ -124,7 +149,7 @@ run_TSNE = function(counts, apply_normalization = FALSE, perplexity = 30, seed =
 #' @rdname expTSNE
 #' @examples
 expTSNE.runTSNE = function(et){
-  tsne_df = run_TSNE(et@norm_counts, perplexity = et@perplexity, seed = et@seed)
+  tsne_df = run_TSNE(et@norm_counts[et@selected_rows, et@selected_columns], perplexity = et@perplexity, seed = et@seed)
   new("expTSNE", 
       tsne_result = tsne_df,
       raw_counts = et@raw_counts,
@@ -274,10 +299,12 @@ expTSNE.load = function(save_dir){
   }
 }
 
-setMethod("show", "expTSNE.input", function(object){
+.show_expTSNE.input = function(object){
   message("I am an expTSNE.input")
-})
+}
+setMethod("show", "expTSNE.input", .show_expTSNE.input)
 
-setMethod("show", "expTSNE", function(object){
+.show_expTSNE = function(object){
   message("I am an expTSNE")
-})
+}
+setMethod("show", "expTSNE", .show_expTSNE)

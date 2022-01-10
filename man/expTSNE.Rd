@@ -95,6 +95,8 @@ colnames(test_counts) = paste("col", seq_len(ncol(test_counts)))
 et = expTSNE.input(test_counts)
 et.run = expTSNE.runTSNE(et)
 
-save_dir = "test_output"
-save_dir = "test_output"
+expTSNE.save(et, "test_output")
+expTSNE.save(et.run, "test_output.tsne")
+et = expTSNE.load("test_output")
+et.tsne = expTSNE.load("test_output.tsne")
 }

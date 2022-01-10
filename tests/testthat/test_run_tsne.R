@@ -6,7 +6,7 @@ test_counts = matrix(runif(10000), nrow = 10, ncol = 1000)[, 1:150]
 rownames(test_counts) = paste("row", seq_len(nrow(test_counts)))
 colnames(test_counts) = paste("col", seq_len(ncol(test_counts)))
 
-
+run_TSNE = expTSNE:::run_TSNE
 
 test_that("run_tsne minimal", {
   tsne_df = run_TSNE(test_counts)
