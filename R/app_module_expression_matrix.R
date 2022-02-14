@@ -29,7 +29,6 @@ server_expression_matrix = function(input, output, session,
         sample_data(SampleInfo(dat))
         
         #reset downstream
-        # browser()
         for(rv in dataset_downstream){
             rv(NULL)
         }

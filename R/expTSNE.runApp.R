@@ -12,7 +12,13 @@
 #' et = expTSNE.load(ex_data)
 #' expTSNE.runApp(et)
 expTSNE.runApp = function(et){
-    FACET_VAR = list(NONE = "none", SAMPLE_TYPE = "sample type", PAM50 = "PAM50")
+    FACET_VAR = setdiff(colnames(et$meta_data), "column_id")
+    names(FACET_VAR) = FACET_VAR
+    FACET_VAR = as.list(FACET_VAR)
+    FACET_VAR = c(list(none = "none", FACET_VAR))
+    
+    gene_lists = list(All = rownames(et$norm_counts))
+    
     clean_list = function(l){
         tmp = unlist(l)
         names(tmp) = NULL
@@ -42,26 +48,26 @@ expTSNE.runApp = function(et){
                              shinycssloaders::withSpinner(plotOutput("plot_tsne_gene", width = "600px", height = "600px"))
                          )
                      )
-            ),
-            tabPanel("Add Gene Set",
-                     ui_upload()
-            ),
-            tabPanel("DE",
-                     ui_point_selection(),
-                     tabsetPanel(
-                         tabPanel("simple",
-                                  actionButton("btn_runDEfast", "Run DE"),
-                                  withSpinner(plotOutput("plot_volcano", width = "400px", height = "400px")),
-                                  withSpinner(plotOutput("plot_boxes", width = "400px", height = "400px"))
-                                  
-                         ),
-                         tabPanel("DESeq2",
-                                  actionButton("btn_runDE", "Run DE"),
-                                  withSpinner(DT::dataTableOutput("dt_DE_res"))
-                         )
-                         
-                     )
-            )
+            )#,
+            # tabPanel("Add Gene Set",
+            #          uploadUI()
+            # )#,
+            # tabPanel("DE",
+            #          ui_point_selection(),
+            #          tabsetPanel(
+            #              tabPanel("simple",
+            #                       actionButton("btn_runDEfast", "Run DE"),
+            #                       withSpinner(plotOutput("plot_volcano", width = "400px", height = "400px")),
+            #                       withSpinner(plotOutput("plot_boxes", width = "400px", height = "400px"))
+            #                       
+            #              ),
+            #              tabPanel("DESeq2",
+            #                       actionButton("btn_runDE", "Run DE"),
+            #                       withSpinner(DT::dataTableOutput("dt_DE_res"))
+            #              )
+            #              
+            #          )
+            # )
         )
     )
     
@@ -69,10 +75,9 @@ expTSNE.runApp = function(et){
     # Define server logic required to draw a histogram
     server <- function(input, output, session) {
         ### TCGA expression data
-        tcga_data = reactiveVal()
-        tsne_input = reactiveVal()
+        expression_data = reactiveVal(et$norm_counts)
         ### Genes to use in t-sne
-        input_genes = reactiveVal()
+        user_input_genes = reactiveVal()
         #subset of parsed genes in tcga expression data
         valid_genes = reactiveVal()
         #table shown in Add Gene Set main panel, includes parsed genes and other data used for selection
@@ -81,13 +86,13 @@ expTSNE.runApp = function(et){
         custom_gene_sets = reactiveVal(list())
         
         #metadata for patient entries
-        meta_data = reactiveVal()
+        meta_data = reactiveVal(et$meta_data)
         #metadata for sample entries
         sample_data = reactiveVal()
         active_dataset = reactiveVal()
         
         #result of tsne
-        tsne_res = reactiveVal()
+        tsne_res = reactiveVal(et$tsne_result)
         #tsne_res with clustering applied
         tsne_clust = reactiveVal()
         
@@ -112,7 +117,7 @@ expTSNE.runApp = function(et){
         
         output$ui_sel_gene_list = renderUI({
             tagList(
-                radioButtons("sel_gene_list", label = "Gene List", choices = c(names(gene_lists), "custom"), inline = TRUE, selected = "PAM50")#,
+                radioButtons("sel_gene_list", label = "Gene List", choices = c(names(gene_lists), "custom"), inline = TRUE)#,
                 # disabled((selectInput("sel_custom_gene_set", label = "Custom gene lists", choices = "")))
             )
         })
@@ -143,7 +148,7 @@ expTSNE.runApp = function(et){
                 # message(paste(gl, collapse = ", "))
                 gl = sort(unique(gl))
             }
-            input_genes(gl)
+            user_input_genes(gl)
         })
         
         output$ui_sel_sample_type_filter =  renderUI({
@@ -154,18 +159,15 @@ expTSNE.runApp = function(et){
                                selected = active_sample_types)
         })
         
-        
-        
-        
         ##
         vis_gene = reactiveVal()
         observeEvent({
-            tcga_data()
+            expression_data()
         }, {
-            req(tcga_data())
+            req(expression_data())
             def = vis_gene()
             if(is.null(def)) def = ""
-            all_genes = rownames(tcga_data())
+            all_genes = rownames(expression_data())
             if(def %in% all_genes){
                 updateSelectizeInput(session, 'txtGene', choices = all_genes, selected = def, server = TRUE)
             }else{
@@ -175,23 +177,23 @@ expTSNE.runApp = function(et){
         })
         observeEvent({
             input$txtGene   
-            tcga_data()
+            expression_data()
         }, {
-            req(tcga_data())
-            if(input$txtGene %in% rownames(tcga_data())){
+            req(expression_data())
+            if(input$txtGene %in% rownames(expression_data())){
                 vis_gene(input$txtGene)
             }
         })
         
         ## compare input genes with available expression data
         observeEvent({
-            tcga_data()
-            input_genes()
+            expression_data()
+            user_input_genes()
         }, {
-            req(tcga_data())
-            gl = input_genes()
+            req(expression_data())
+            gl = user_input_genes()
             
-            missed = setdiff(gl, rownames(tcga_data()))
+            missed = setdiff(gl, rownames(expression_data()))
             if(length(missed) > 0){
                 showNotification(paste("genes not present in TCGA:", paste(missed, collapse = ", ")), type = "warning")
             }
@@ -222,23 +224,21 @@ expTSNE.runApp = function(et){
         
         
         #running tsne
-        server_expression_matrix(input, output, session,
-                                 app_datasets,
-                                 active_dataset,
-                                 dataset_downstream,
-                                 tcga_data,
-                                 meta_data,
-                                 sample_data,
-                                 code2type,
-                                 tsne_input,
-                                 tsne_res)
-        
-        server_tsne(input, output, session, tsne_res, tsne_input, valid_genes, meta_data, sample_data, code2type, FACET_VAR)
+        # server_expression_matrix(input, output, session,
+        #                          app_datasets,
+        #                          active_dataset,
+        #                          dataset_downstream,
+        #                          expression_data,
+        #                          meta_data,
+        #                          sample_data,
+        #                          code2type,
+        #                          tsne_input,
+        #                          tsne_res)
         
         #the gene expression mapped to tsne space
-        server_gene_xy(input, output, session, tsne_res, tcga_data, vis_gene)
+        server_gene_xy(input, output, session, tsne_res, meta_data, vis_gene)
         #upload user data for gene lists
-        server_upload(input, output, session, gene_table, tcga_data, custom_gene_sets)
+        # uploadServer(input, output, session, gene_table, expression_data, custom_gene_sets)
         #interface to select A and B set of points from scatterplot
         sample_groups = server_point_selection(input, output, session, tsne_clust = tsne_clust, meta_data = meta_data, tsne_res = tsne_res)
         sample_groups_A =sample_groups$A
@@ -258,9 +258,9 @@ expTSNE.runApp = function(et){
         observeEvent({
             input$btn_runDE
         }, {
-            req(tsne_input())
+            req(expression_data())
             req(sample_groups)
-            diff_res = run_DE(tsne_input(), sample_groups_A(), sample_groups_B())
+            diff_res = run_DE(expression_data(), sample_groups_A(), sample_groups_B())
             DE_res(diff_res)
         })
         
@@ -287,13 +287,13 @@ expTSNE.runApp = function(et){
         observeEvent({
             input$btn_runDEfast
         }, {
-            req(tsne_input())
+            req(expression_data())
             req(sample_groups)
             if(length(sample_groups_A()) == 0 | length(sample_groups_B()) == 0){
                 DE_fast_raw(NULL)
                 DE_fast_res(NULL)
             }else{
-                dt = run_group.fast(tsne_input(), sample_groups_A(), sample_groups_B())
+                dt = run_group.fast(expression_data(), sample_groups_A(), sample_groups_B())
                 DE_fast_raw(dt)
                 p_dt = run_DE.fast(dt)   
                 DE_fast_res(p_dt)    
