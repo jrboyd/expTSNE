@@ -19,3 +19,8 @@ run_TSNE(counts, apply_normalization = FALSE, perplexity = 30, seed = NULL)
 \description{
 run_TSNE
 }
+\examples{
+ex_data = system.file("extdata/test_expTSNE.input", package = "expTSNE", mustWork = TRUE)
+et = expTSNE.load(ex_data)
+tsne_df = run_TSNE(et$norm_counts)
+}

@@ -1,20 +1,20 @@
 setClassUnion("numericOrNull", c("numeric", "NULL"))
 
-.check_valid_expTSNE = function(et){
+.check_valid_expTSNE = function(object){
   msg = character()
-  if(is.null(rownames(et@raw_counts))) msg = c(msg, "raw_counts must have rownames.")
-  if(is.null(colnames(et@raw_counts))) msg = c(msg, "raw_counts must have colnames.")
-  if(is.null(et@selected_rows)) msg = c(msg, "selected_rows cannot be NULL.")
-  if(is.null(et@selected_columns)) msg = c(msg, "selected_columns cannot be NULL.")
-  if(!all(et@selected_rows %in% rownames(et@raw_counts))) msg = c(msg, "selected_rows must all be in rownames.")
-  if(!all(et@selected_columns %in% colnames(et@raw_counts))) msg = c(msg, "selected_columns must all be in colnames.")
-  if(!all(ncol(et@raw_counts) == ncol(et@norm_counts))) msg = c(msg, "norm_counts and raw_counts colnames must be equal.")
-  if(!all(nrow(et@raw_counts) == nrow(et@norm_counts))) msg = c(msg, "norm_counts and raw_counts rownames must be equal.")
-  if(!all(colnames(et@raw_counts) == colnames(et@norm_counts))) msg = c(msg, "norm_counts and raw_counts colnames must be equal.")
-  if(!all(rownames(et@raw_counts) == rownames(et@norm_counts))) msg = c(msg, "norm_counts and raw_counts rownames must be equal.")
-  if(nrow(et@meta_data) != ncol(et@raw_counts)) msg = c(msg, "meta_data must have one row per column in raw_counts.")
-  if(is.null(rownames(et@meta_data))) msg = c(msg, "meta_data must have rownames.")
-  if(!all(rownames(et@meta_data) == colnames(et@raw_counts))) msg = c(msg, "meta_data rownames must equal raw_counts colnames.")
+  if(is.null(rownames(object@raw_counts))) msg = c(msg, "raw_counts must have rownames.")
+  if(is.null(colnames(object@raw_counts))) msg = c(msg, "raw_counts must have colnames.")
+  if(is.null(object@selected_rows)) msg = c(msg, "selected_rows cannot be NULL.")
+  if(is.null(object@selected_columns)) msg = c(msg, "selected_columns cannot be NULL.")
+  if(!all(object@selected_rows %in% rownames(object@raw_counts))) msg = c(msg, "selected_rows must all be in rownames.")
+  if(!all(object@selected_columns %in% colnames(object@raw_counts))) msg = c(msg, "selected_columns must all be in colnames.")
+  if(!all(ncol(object@raw_counts) == ncol(object@norm_counts))) msg = c(msg, "norm_counts and raw_counts colnames must be equal.")
+  if(!all(nrow(object@raw_counts) == nrow(object@norm_counts))) msg = c(msg, "norm_counts and raw_counts rownames must be equal.")
+  if(!all(colnames(object@raw_counts) == colnames(object@norm_counts))) msg = c(msg, "norm_counts and raw_counts colnames must be equal.")
+  if(!all(rownames(object@raw_counts) == rownames(object@norm_counts))) msg = c(msg, "norm_counts and raw_counts rownames must be equal.")
+  if(nrow(object@meta_data) != ncol(object@raw_counts)) msg = c(msg, "meta_data must have one row per column in raw_counts.")
+  if(is.null(rownames(object@meta_data))) msg = c(msg, "meta_data must have rownames.")
+  if(!all(rownames(object@meta_data) == colnames(object@raw_counts))) msg = c(msg, "meta_data rownames must equal raw_counts colnames.")
   if(length(msg) > 0){
     return(msg)
   }else{
@@ -76,17 +76,10 @@ expTSNE.input = function(
 ){
   if(is.null(rownames(raw_counts))) stop("raw_counts must have rownames.")
   if(is.null(colnames(raw_counts))) stop("raw_counts must have colnames.")
-  if(is.null(selected_rows)) stop("selected_rows cannot be NULL.")
-  if(is.null(selected_columns)) stop("selected_columns cannot be NULL.")
-  if(!all(selected_rows %in% rownames(raw_counts))) stop("selected_rows must all be in rownames.")
-  if(!all(selected_columns %in% colnames(raw_counts))) stop("selected_columns must all be in colnames.")
   if(!all(ncol(raw_counts) == ncol(norm_counts))) stop("norm_counts and raw_counts colnames must be equal.")
   if(!all(nrow(raw_counts) == nrow(norm_counts))) stop("norm_counts and raw_counts rownames must be equal.")
   if(!all(colnames(raw_counts) == colnames(norm_counts))) stop("norm_counts and raw_counts colnames must be equal.")
   if(!all(rownames(raw_counts) == rownames(norm_counts))) stop("norm_counts and raw_counts rownames must be equal.")
-  if(nrow(meta_data) != ncol(raw_counts)) stop("meta_data must have one row per column in raw_counts.")
-  if(is.null(rownames(meta_data))) stop("meta_data must have rownames.")
-  if(!all(rownames(meta_data) == colnames(raw_counts))) stop("meta_data rownames must equal raw_counts colnames.")
   new("expTSNE.input", 
       raw_counts = raw_counts,
       norm_counts = norm_counts,
@@ -104,7 +97,6 @@ expTSNE.input = function(
 #' @return
 #' @export
 #' @rdname expTSNE
-#' @examples
 setClass("expTSNE", 
          slots = c(
            tsne_result = "data.frame"
@@ -121,6 +113,9 @@ setClass("expTSNE",
 #' @return
 #' @import Rtsne
 #' @examples
+#' ex_data = system.file("extdata/test_expTSNE.input", package = "expTSNE", mustWork = TRUE)
+#' et = expTSNE.load(ex_data)
+#' tsne_df = run_TSNE(et$norm_counts)
 run_TSNE = function(counts, apply_normalization = FALSE, perplexity = 30, seed = NULL){
   set.seed(seed)
   if(apply_normalization){
@@ -148,6 +143,9 @@ run_TSNE = function(counts, apply_normalization = FALSE, perplexity = 30, seed =
 #' @export
 #' @rdname expTSNE
 #' @examples
+#' ex_data = system.file("extdata/test_expTSNE.input", package = "expTSNE", mustWork = TRUE)
+#' et = expTSNE.load(ex_data)
+#' et.ran = expTSNE.runTSNE(et)
 expTSNE.runTSNE = function(et){
   tsne_df = run_TSNE(et@norm_counts[et@selected_rows, et@selected_columns], perplexity = et@perplexity, seed = et@seed)
   new("expTSNE", 
@@ -161,58 +159,11 @@ expTSNE.runTSNE = function(et){
       selected_columns = et@selected_columns)
 }
 
-# setGeneric("expTSNE.save")
-# 
-# setMethod("expTSNE.save", signature = c("expTSNE.input", "character", "logical"), function(et, save_dir, overwrite){
-#   if(dir.exists(save_dir)){
-#     if(!overwrite){
-#       stop("Output already exists.  Run with `overwite = TRUE` to replace.")  
-#     }else{
-#       unlink(save_dir, recursive = TRUE)
-#     }
-#   }
-#   dir.create(save_dir, recursive = TRUE)
-#   write.table(et@raw_counts, file.path(save_dir, "raw_counts.csv"), sep = ",", quote = FALSE)
-#   write.table(et@norm_counts, file.path(save_dir, "norm_counts.csv"), sep = ",", quote = FALSE)
-#   write.table(et@meta_data, file.path(save_dir, "meta_data.csv"), sep = ",", quote = FALSE)
-#   write(et@perplexity, file = file.path(save_dir, "perplexity.txt"))
-#   if(is.null(et@seed)){
-#     write("NULL", file = file.path(save_dir, "seed.txt"))  
-#   }else{
-#     write(et@seed, file = file.path(save_dir, "seed.txt"))  
-#   }
-#   write(et@selected_rows, file = file.path(save_dir, "selected_rows.txt"))
-#   write(et@selected_columns, file = file.path(save_dir, "selected_columns.txt"))
-# })
-# 
-# setMethod("expTSNE.save", signature = c("expTSNE", "character", "logical"), function(et, save_dir, overwrite){
-#   if(dir.exists(save_dir)){
-#     if(!overwrite){
-#       stop("Output already exists.  Run with `overwite = TRUE` to replace.")  
-#     }else{
-#       unlink(save_dir, recursive = TRUE)
-#     }
-#   }
-#   dir.create(save_dir, recursive = TRUE)
-#   write.table(et@raw_counts, file.path(save_dir, "raw_counts.csv"), sep = ",", quote = FALSE)
-#   write.table(et@norm_counts, file.path(save_dir, "norm_counts.csv"), sep = ",", quote = FALSE)
-#   write.table(et@meta_data, file.path(save_dir, "meta_data.csv"), sep = ",", quote = FALSE)
-#   write(et@perplexity, file = file.path(save_dir, "perplexity.txt"))
-#   if(is.null(et@seed)){
-#     write("NULL", file = file.path(save_dir, "seed.txt"))  
-#   }else{
-#     write(et@seed, file = file.path(save_dir, "seed.txt"))  
-#   }
-#   write(et@selected_rows, file = file.path(save_dir, "selected_rows.txt"))
-#   write(et@selected_columns, file = file.path(save_dir, "selected_columns.txt"))
-#   write(et@selected_columns, file = file.path(save_dir, "selected_columns.txt"))
-# })
-
 #' expTSNE.save
 #'
-#' @param et
-#' @param save_dir
-#' @param overwrite
+#' @param et expTSNE or expTSNE.input object to save
+#' @param save_dir directory to save to. Will not be overwritten by default if it exists.
+#' @param overwrite if TRUE, overwrite contents of save_dir.
 #'
 #' @return
 #' @export
@@ -232,7 +183,20 @@ expTSNE.save = function(et, save_dir, overwrite = FALSE){
     if(!overwrite){
       stop("Output already exists.  Run with `overwite = TRUE` to replace.")
     }else{
-      unlink(save_dir, recursive = TRUE)
+      if(!all(dir(save_dir) %in% c(
+        "meta_data.csv",
+        "norm_counts.csv",
+        "perplexity.txt",
+        "raw_counts.csv",
+        "seed.txt",
+        "selected_columns.txt",
+        "selected_rows.txt",
+        "tsne_result.csv"
+      ))){
+        stop("Output contains non-standard files and cannot be overwritten safely. Please specify new save location.")
+      }else{
+        unlink(save_dir, recursive = TRUE)  
+      }
     }
   }
   dir.create(save_dir, recursive = TRUE)

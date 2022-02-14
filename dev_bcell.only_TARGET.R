@@ -1,19 +1,10 @@
 library(data.table)
 library(expTSNE)
 
-counts <- read.csv("~/R/PR_Bcell_development/data/preB_healthy_counts.csv", header = TRUE, row.names = 1)
 
-colnames(counts)
-condition <-  c("proB", "preBI", "preBIIS", "preBIIL", "proB", "preBI", "preBIIS", "preBIIL", "proB", "preBI", "preBIIS", "preBIIL")
-coldata <- data.frame(row.names=colnames(counts), condition)
 
-tab_files = dir("~/R/PR_Bcell_development/data/", pattern = "tab$", full.names = TRUE)
-bam_files = dir("~/R/PR_Bcell_development/data/", pattern = "bam$", full.names = TRUE)
 tab_files.target = dir("~/../dbgap/data/alignment_RNA-Seq/", pattern = ".ReadsPerGene.out.tab$", full.names = TRUE)
 bam_files.target = dir("~/../dbgap/data/alignment_RNA-Seq/", pattern = "bam$", full.names = TRUE)
-tab_files.ccle = dir("~/R/SF_Ikaros_splicing/monaco_and_CCLE", pattern = ".ReadsPerGene.out.tab$", full.names = TRUE)
-bam_files.ccle = dir("~/R/SF_Ikaros_splicing/monaco_and_CCLE", pattern = "bam$", full.names = TRUE)
-
 
 gtf_file = "~/indexes/HG38canon/GTF/gencode.v36.annotation.gtf"
 sum(duplicated(substr(basename(bam_files), 1, 15)))
@@ -26,21 +17,13 @@ sum(duplicated(substr(basename(bam_files), 1, 15)))
 # strand_assessment$tracks_plus
 # strand_assessment$tracks_negative
 
-sapply(tab_files, ssvRecipes::guess_lib_from_file)
 sapply(tab_files.target[1:15], ssvRecipes::guess_lib_from_file)
 
-mat.dev = ssvRecipes::load_matrix_from_ReadsPerGene.out.tab(tab_files, lib_type = "unstranded")
-write.table(mat.dev, file = "~/R/PR_Bcell_development/data/bcell_dev_and_careo.unstranded_counts.csv", sep = ",", quote = FALSE)
 mat.target = ssvRecipes::load_matrix_from_ReadsPerGene.out.tab(tab_files.target, lib_type = "unstranded")
 
-dim(mat.dev)
 dim(mat.target)
 
-common = intersect(rownames(mat.dev), rownames(mat.target))
-length(common)
-
-mat = cbind(mat.dev[common,], mat.target[common,])
-
+mat = mat.target
 dim(mat)
 
 # ssvQC::get_mapped_reads(c(bam_files, bam_files.target))
@@ -68,28 +51,11 @@ dt[, .(round(sum(count)/1e6, 1)), .(sample)][order(V1)]
 
 et = expTSNE.input(raw_counts = mat, norm_counts = mat.rpm)
 
-et$meta_data$source = ifelse(grepl("donor", et$meta_data$column_id), "PR", "CAREO")
-et$meta_data[grepl("TARGET", et$meta_data$column_id),]$source = "TARGET"
-
 et
 
 # et@norm_counts = (apply(et@raw_counts, 2, function(x)x/sum(x)*1e6))
 dim(et@norm_counts)
 dim(et@raw_counts)
-
-
-meta_dt = as.data.table(et$meta_data)
-subset(et$meta_data, source == "PR")
-subset(et$meta_data, source == "CAREO")
-table(et$meta_data$source)
-
-meta_dt$cell = "not_set"
-meta_dt[source == "CAREO", cell := tstrsplit(column_id, "_", keep = 1)]
-meta_dt[source == "PR", cell := tstrsplit(column_id, "_", keep = 1)]
-ids = meta_dt[source == "TARGET"]$column_id
-
-
-
 
 parse_patient_ids = function(ids){
   dt = data.table(id = ids)
@@ -105,10 +71,9 @@ parse_sample_codes = function(ids){
   sub("[A-Z]", "", dt$V1)
 }
 
-meta_dt$patient_id = "not_set"
-meta_dt[source == "TARGET", patient_id := parse_patient_ids(column_id)]
-meta_dt$sample_code = "not_set"
-meta_dt[source == "TARGET", sample_code := parse_sample_codes(column_id)]
+meta_dt = as.data.table(et$meta_data)
+meta_dt[, patient_id := parse_patient_ids(column_id)]
+meta_dt[, sample_code := parse_sample_codes(column_id)]
 
 # 40,Recurrent Blood Derived Cancer - Peripheral Blood,TRB
 # 03,Primary Blood Derived Cancer - Peripheral Blood,TB
@@ -176,13 +141,18 @@ ik_id = subset(ref_gr, gene_name == "IKZF1")$gene_id
 
 et$meta_data$value = log10(et$norm_counts[ik_id,] + 1)
 v = et$meta_data$value
-et$meta_data$value = (v-mean(v))/sd(v)
+v = (v-mean(v))/sd(v) 
+v[v < -3] = -3
+et$meta_data$value = v
 et$meta_data
 
 
-plot_expTSNE(et, color_var = "value", facet_var = "source")
+plot_expTSNE(et, color_var = "value")
 
 plot_expTSNE(et, color_var = "Cell.of.Origin", facet_var = "Race")
-plot_expTSNE(et, color_var = "cell", facet_var = "source") +
+plot_expTSNE(et, color_var = "value", facet_var = "Race") +
   labs(color = "IKZF1 expression")
 
+plot_expTSNE(et, color_var = "value", facet_var = "Cell.of.Origin")
+
+expTSNE.runApp(et)

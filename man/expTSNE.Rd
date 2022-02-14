@@ -32,7 +32,7 @@ expTSNE.load(save_dir)
 
 \item{save_dir}{}
 
-\item{overwrite}{}
+\item{overwrite}{if TRUE, overwrite contents of save_dir.}
 }
 \value{
 
@@ -88,6 +88,9 @@ colnames(test_counts) = paste("col", seq_len(ncol(test_counts)))
 et = expTSNE.input(test_counts)
 et = expTSNE.runTSNE(et)
 expTSNE.runApp(et)
+ex_data = system.file("extdata/test_expTSNE.input", package = "expTSNE", mustWork = TRUE)
+et = expTSNE.load(ex_data)
+et.ran = expTSNE.runTSNE(et)
 test_counts = matrix(runif(10000), nrow = 10, ncol = 1000)
 rownames(test_counts) = paste("row", seq_len(nrow(test_counts)))
 colnames(test_counts) = paste("col", seq_len(ncol(test_counts)))

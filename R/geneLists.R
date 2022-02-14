@@ -4,8 +4,6 @@
 #'
 #' @return
 #' @export
-#'
-#' @examples
 setClass("geneLists",
          slots = c(
            geneLists = "list"
