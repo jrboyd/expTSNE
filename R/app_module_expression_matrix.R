@@ -17,7 +17,6 @@ server_expression_matrix = function(input, output, session,
         meta_data(et$meta_data)
         
         #reset downstream
-        # browser()
         for(rv in dataset_downstream){
             rv(NULL)
         }

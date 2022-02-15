@@ -64,24 +64,22 @@ expTSNE.runApp = function(et){
                                   actionButton("btn_runDE", "Run DE"),
                                   withSpinner(DT::dataTableOutput("dt_DE_res"))
                          )
-                         
                      )
             )
         )
     )
     
-    
     # Define server logic required to draw a histogram
     server <- function(input, output, session) {
         ### TCGA expression data
-        tcga_data = reactiveVal()
-        tsne_input = reactiveVal()
+        tcga_data = reactiveVal(et$norm_counts)
+        tsne_input = reactiveVal(et$norm_counts)
         ### Genes to use in t-sne
-        input_genes = reactiveVal()
+        input_genes = reactiveVal(rownames(et$norm_counts))
         #subset of parsed genes in tcga expression data
         valid_genes = reactiveVal()
         #table shown in Add Gene Set main panel, includes parsed genes and other data used for selection
-        gene_table = reactiveVal()
+        gene_table = reactiveVal(data.frame(gene_name = rownames(et$norm_counts)))
         #all added custom gene sets
         custom_gene_sets = reactiveVal(list())
         
@@ -91,7 +89,7 @@ expTSNE.runApp = function(et){
         active_dataset = reactiveVal(et)
         
         #result of tsne
-        tsne_res = reactiveVal()
+        tsne_res = reactiveVal(as.data.table(et$tsne_result))
         #tsne_res with clustering applied
         tsne_clust = reactiveVal()
         

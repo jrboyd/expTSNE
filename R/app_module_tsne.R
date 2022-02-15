@@ -12,8 +12,8 @@ run_tsne = function(expression_matrix, perplexity = 30, bfc = BiocFileCache()){
     })
     
     tsne_df = as.data.table(tsne_patient$Y)
-    colnames(tsne_df) = c("x", "y")
-    tsne_df$sample_id = colnames(expression_matrix)
+    colnames(tsne_df) = c("tx", "ty")
+    tsne_df$column_id = colnames(expression_matrix)
     tsne_df
 }
 
@@ -24,10 +24,14 @@ server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes
         # tcga_data()
         tsne_input()
         valid_genes()
+        tsne_res()
     }, {
         expr_mat = tsne_input()
         gl = valid_genes()
-        
+        req(expr_mat)
+        req(gl)
+        req(is.null(tsne_res()))
+        browser()
         #choose dimensional reduction method, if possible
         if(ncol(expr_mat) < 3){
             showNotification("Too few samples for dimensional reduction.", type = "error")
@@ -36,7 +40,7 @@ server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes
             browser()
             pc = prcomp(expr_mat[gl,])
             tsne_dt = as.data.table(pc$rotation[,1:2], keep.rownames = TRUE)[, c(2:3, 1)]
-            setnames(tsne_dt, c("rn", "PC1", "PC2"), c("sample_id", "x", "y"))
+            setnames(tsne_dt, c("rn", "PC1", "PC2"), c("column_id", "tx", "ty"))
             tsne_worked = TRUE
         }else if(length(gl) > 0){
             tsne_worked = tryCatch({
@@ -51,9 +55,9 @@ server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes
         
         if(tsne_worked){
             meta_dt = meta_data()
-            tsne_dt = merge(tsne_dt, meta_dt, by = "sample_id")
-            tsne_dt[, x := scales::rescale(x, c(-.5, .5))]
-            tsne_dt[, y := scales::rescale(y, c(-.5, .5))]
+            tsne_dt = merge(tsne_dt, meta_dt, by = "column_id")
+            tsne_dt[, tx := scales::rescale(tx, c(-.5, .5))]
+            tsne_dt[, ty := scales::rescale(ty, c(-.5, .5))]
             tsne_res(tsne_dt) 
             
         }else{
@@ -67,23 +71,15 @@ server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes
         req(tsne_res())
         req(input$sel_facet_var)
         tsne_dt = tsne_res()
-        tsne_dt = merge(tsne_dt, meta_data(), by = "patient_id")
-        # browser()
-        # if(input$sel_color_by == "sample type"){ #c("sample type", "PAM50")
-        #     p = ggplot(tsne_dt, aes(x = x, y = y, color = sample_type)) 
-        # }else if(input$sel_color_by == "PAM50"){
-        #     p = ggplot(tsne_dt, aes(x = x, y = y, color = pam_call)) 
-        # }else{
-        #     stop("unrecognized input$sel_color_by: ", input$sel_color_by)
-        # }
+        tsne_dt = merge(tsne_dt, meta_data(), by = "column_id")
         if(input$sel_color_by ==  FACET_VAR$NONE){
-            p = ggplot(tsne_dt, aes_string(x = "x", y = "y")) 
+            p = ggplot(tsne_dt, aes_string(x = "tx", y = "ty")) 
         }else{
-            p = ggplot(tsne_dt, aes_string(x = "x", y = "y", color = input$sel_color_by))     
+            p = ggplot(tsne_dt, aes_string(x = "tx", y = "ty", color = input$sel_color_by))     
         }
         
         if(input$sel_facet_var != FACET_VAR$NONE){
-            p = p + annotate("point", x= tsne_dt$x, y = tsne_dt$y, color = 'gray70', size = .3)
+            p = p + annotate("point", x= tsne_dt$tx, y = tsne_dt$ty, color = 'gray70', size = .3)
         }
         p = p + 
             geom_point() + 

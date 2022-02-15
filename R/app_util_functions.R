@@ -137,7 +137,7 @@ sampleCap = function(x, n = 500){
     out
 }
 
-km_clust = function(tsne_res, k = 5, id_var = "patient_id", x_var = "x", y_var = "y", nsamp = Inf){
+km_clust = function(tsne_res, k = 5, id_var = "column_id", x_var = "tx", y_var = "ty", nsamp = Inf){
     if(k < 2){
         k = 2
         warning("increasing nn to 2")
@@ -155,7 +155,7 @@ km_clust = function(tsne_res, k = 5, id_var = "patient_id", x_var = "x", y_var =
     tsne_res
 }
 
-h_clust = function(tsne_res, n_clust = 5, id_var = "patient_id", x_var = "x", y_var = "y", nsamp = Inf){
+h_clust = function(tsne_res, n_clust = 5, id_var = "column_id", x_var = "tx", y_var = "ty", nsamp = Inf){
     if(n_clust < 2){
         n_clust = 2
         warning("increasing n_clust to 2")
@@ -176,7 +176,7 @@ h_clust = function(tsne_res, n_clust = 5, id_var = "patient_id", x_var = "x", y_
 }
 
 #from seqtsne
-nn_clust = function(tsne_res, nn = 100, auto_nn_fraction = 5, id_var = "patient_id", x_var = "x", y_var = "y", nsamp = Inf){
+nn_clust = function(tsne_res, nn = 100, auto_nn_fraction = 5, id_var = "column_id", x_var = "tx", y_var = "ty", nsamp = Inf){
     if(nn < 2){
         nn = 2
         warning("increasing nn to 2")
@@ -192,6 +192,7 @@ nn_clust = function(tsne_res, nn = 100, auto_nn_fraction = 5, id_var = "patient_
             stop("not enough samples to cluster. ", nrow(tsne_res), " samples submitted.")
         }
     }
+    
     mat = t(as.matrix(tsne_res[, c(x_var, y_var), with = FALSE]))
     colnames(mat) = tsne_res[[id_var]]
     mat = mat[, sampleCap(seq(ncol(mat)), nsamp)]
@@ -218,6 +219,7 @@ nn_clust = function(tsne_res, nn = 100, auto_nn_fraction = 5, id_var = "patient_
     ## community membership
     com <- km$membership
     names(com) <- km$names
+    # browser()
     com_dt = data.table(V1 = names(com), cluster_id = paste("cluster", com))
     setnames(com_dt, "V1", id_var)
     

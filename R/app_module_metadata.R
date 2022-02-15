@@ -1,5 +1,5 @@
 
-metadataServer = function(rv_metadata, Name = "metadata", var_ignore = c("patient_id", "sample_id")){
+metadataServer = function(rv_metadata, Name = "metadata", var_ignore = c("column_id")){
     id = as_id(Name)
     moduleServer(
         id,

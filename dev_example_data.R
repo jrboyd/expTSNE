@@ -13,8 +13,8 @@ if(FALSE){
   et$meta_data[rownames(et$meta_data) %in% grp_a,]$group = "A"
   table(et$meta_data$group )
   
-  et$raw_counts[, colnames(et$raw_counts) %in% grp_b][1:3,] = et$raw_counts[, colnames(et$raw_counts) %in% grp_b][1:3,] *1.5
-  et$raw_counts[, colnames(et$raw_counts) %in% grp_a][3:4,] = et$raw_counts[, colnames(et$raw_counts) %in% grp_a][3:4,] *1.5
+  et$raw_counts[, colnames(et$raw_counts) %in% grp_b][1:3,] = et$raw_counts[, colnames(et$raw_counts) %in% grp_b][1:3,] + 1.5
+  et$raw_counts[, colnames(et$raw_counts) %in% grp_a][3:4,] = et$raw_counts[, colnames(et$raw_counts) %in% grp_a][3:4,] + 1.5
   et$norm_counts = et$raw_counts
   expTSNE.save(et, "inst/extdata/test_expTSNE.input/", overwrite = TRUE)
   

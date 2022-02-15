@@ -43,13 +43,6 @@ server_upload = function(input, output, session, gene_table, tcga_data, custom_g
     PreviewSet_Filepath = reactiveVal(value = "", label = "PreviewSet_Filepath")
     PreviewSet_Name = reactiveVal(value = "", label = "PreviewSet_Name")
     PreviewSet_DataFrame = reactiveVal()
-    # PreviewSet_DataFrame = reactive({
-    #     showNotification(PreviewSet_Filepath())
-    #     if(is.null(PreviewSet_Filepath())) return(NULL)
-    #     if(PreviewSet_Filepath() == "") return(NULL)
-    #     browser()
-    #     load_peak_wValidation(PreviewSet_Filepath(), with_notes = T)
-    # })
     observeEvent({
         PreviewSet_Filepath()
         PreviewSet_Name()
@@ -57,8 +50,6 @@ server_upload = function(input, output, session, gene_table, tcga_data, custom_g
         if(PreviewSet_Filepath() == ""){
             PreviewSet_DataFrame(NULL)
         }else{
-            # browser()
-            # fread(PreviewSet_Filepath())
             ##TODO load a DESEQ file or other gene list
             showNotification(paste0("loading ", PreviewSet_Name()))
             out = decide_parse_FUN(PreviewSet_Filepath(), PreviewSet_Name())
