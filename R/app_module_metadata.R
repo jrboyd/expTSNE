@@ -1,6 +1,3 @@
-as_id = function(Name){
-    gsub(" ", "_", tolower(Name))
-}
 
 metadataServer = function(rv_metadata, Name = "metadata", var_ignore = c("patient_id", "sample_id")){
     id = as_id(Name)

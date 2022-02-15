@@ -1,7 +1,6 @@
-point_selection_plot_sizes = "400px"
-ps_size = point_selection_plot_sizes
 
-ui_point_selection = function(){
+
+ui_point_selection = function(ps_size = "400px"){
     sidebarLayout(
         sidebarPanel(
             tags$h5("TODO: clean up some weird A/B interaction, B trumps A currently."),
@@ -64,18 +63,13 @@ server_point_selection = function(input, output, session, tsne_clust, meta_data,
         req(tsne_res())
         tsne_dt = tsne_res()
         clust_method = input$tabs_cluster_method
-        warning("knn hardcoded")
-        clust_method = "knn"
         showNotification(paste("clustering method is", clust_method))
         if(clust_method == "knn"){
-            tsne_dt.clust = nn_clust(tsne_dt, nn = 5)
-            # tsne_dt.clust = nn_clust(tsne_dt, nn = input$num_nn)
+            tsne_dt.clust = nn_clust(tsne_dt, nn = input$num_nn)
         }else if(clust_method == "kmeans"){
-            tsne_dt.clust = km_clust(tsne_dt, k = 5)
-            # tsne_dt.clust = km_clust(tsne_dt, k = input$num_kmeans)
+            tsne_dt.clust = km_clust(tsne_dt, k = input$num_kmeans)
         }else if(clust_method == "hierarchical"){
-            tsne_dt.clust = h_clust(tsne_dt, n_clust = 5)
-            # tsne_dt.clust = h_clust(tsne_dt, n_clust = input$num_clust)
+            tsne_dt.clust = h_clust(tsne_dt, n_clust = input$num_clust)
         }else{
             stop("Unrecognized clustering method, ", clust_method)
         }
