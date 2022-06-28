@@ -9,9 +9,6 @@ expTSNE.runApp(et)
 \arguments{
 \item{et}{expTSNE object}
 }
-\value{
-
-}
 \description{
 expTSNE.runApp
 }

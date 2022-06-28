@@ -41,7 +41,9 @@ setClass("expTSNE.input",
          slots = c(
            raw_counts = "matrix",
            norm_counts = "matrix",
+           norm_description = "character",
            meta_data = "data.frame",
+           column_id_var = "character",
            perplexity = "numeric",
            seed = "numericOrNull",
            selected_rows = "character",
@@ -66,13 +68,15 @@ setClass("expTSNE.input",
 #' et = expTSNE.runTSNE(et)
 #' expTSNE.runApp(et)
 expTSNE.input = function(
-  raw_counts,
-  norm_counts = raw_counts,
-  meta_data = data.frame(column_id = colnames(raw_counts), row.names = colnames(raw_counts)),
-  perplexity = 30,
-  seed = 0,
-  selected_rows = rownames(raw_counts),
-  selected_columns = colnames(raw_counts)
+    raw_counts,
+    norm_counts = raw_counts,
+    norm_description = "normalized counts",
+    meta_data = data.frame(column_id = colnames(raw_counts), row.names = colnames(raw_counts)),
+    column_id_var = "column_id",
+    perplexity = 30,
+    seed = 0,
+    selected_rows = rownames(raw_counts),
+    selected_columns = colnames(raw_counts)
 ){
   if(is.null(rownames(raw_counts))) stop("raw_counts must have rownames.")
   if(is.null(colnames(raw_counts))) stop("raw_counts must have colnames.")
@@ -80,14 +84,29 @@ expTSNE.input = function(
   if(!all(nrow(raw_counts) == nrow(norm_counts))) stop("norm_counts and raw_counts rownames must be equal.")
   if(!all(colnames(raw_counts) == colnames(norm_counts))) stop("norm_counts and raw_counts colnames must be equal.")
   if(!all(rownames(raw_counts) == rownames(norm_counts))) stop("norm_counts and raw_counts rownames must be equal.")
+  if(is.data.table(meta_data)) meta_data = as.data.frame(meta_data)
+  if(is.null(rownames(meta_data))){
+    if(is.null(meta_data[[column_id_var]])){
+      stop(column_id_var, " must be in meta_data if rownames not set")
+    }
+    rownames(meta_data) = meta_data[[column_id_var]]
+  }
+  if(is.null(meta_data[[column_id_var]])){
+    if(is.null(rownames(meta_data))){
+      stop(column_id_var, " must be in meta_data if rownames not set")
+    }
+    meta_data[[column_id_var]] = rownames(meta_data)
+  }
   new("expTSNE.input", 
       raw_counts = raw_counts,
       norm_counts = norm_counts,
+      norm_description = norm_description,
       meta_data = meta_data,
       perplexity = perplexity,
       seed = seed,
       selected_rows = selected_rows,
-      selected_columns = selected_columns)
+      selected_columns = selected_columns,
+      column_id_var = column_id_var)
 }
 
 #' expTSNE
@@ -104,6 +123,70 @@ setClass("expTSNE",
          contains = "expTSNE.input"
 )
 
+#' get_args
+#'
+#' returns parameters of calling function as a named list.
+#'
+#' @param env
+#' @param ...
+#'
+#' @return
+#'
+#' @examples
+get_args = function(env = parent.frame(), to_ignore = character(), ...){
+  args = c(as.list(env), list(...))
+  args = args[!names(args) %in% to_ignore]
+  args[order(names(args))]
+}
+#' digest_args
+#'
+#' returns digest results of name list of parameters of calling function
+#'
+#' @param env
+#' @param ...
+#'
+#' @return
+#' @import digest
+#'
+#' @examples
+digest_args = function(env = parent.frame(), to_ignore = character(), ...){
+  digest::digest(get_args(env, to_ignore, ...))
+}
+
+
+#' @param bfc
+#' @param rname
+#' @param FUN
+#' @param version
+#' @param force_overwrite
+#'
+#' @return
+#' @import BiocFileCache
+#'
+#' @examples
+bfcif = function(bfc, rname, FUN,
+                 version = "v1",
+                 force_overwrite = getOption("TSNE_FORCE_CACHE_OVERWRITE", FALSE)){
+  # is rname in cache?
+  vrname = paste0(rname, "_", version)
+  if(nrow(BiocFileCache::bfcquery(bfc, query = vrname, field = "rname")) == 0){
+    cache_path = BiocFileCache::bfcnew(bfc, rname = vrname)
+    
+  }else{
+    cache_path = BiocFileCache::bfcrpath(bfc, vrname)
+  }
+  # does cached file exist?
+  if(file.exists(cache_path) && !force_overwrite){
+    load(BiocFileCache::bfcrpath(bfc, vrname))
+  }else{
+    res = FUN()
+    save(res, file = cache_path)
+  }
+  # return either new results or cached results
+  res
+}
+
+
 #' run_TSNE
 #'
 #' @param counts 
@@ -116,21 +199,36 @@ setClass("expTSNE",
 #' ex_data = system.file("extdata/test_expTSNE.input", package = "expTSNE", mustWork = TRUE)
 #' et = expTSNE.load(ex_data)
 #' tsne_df = run_TSNE(et$norm_counts)
-run_TSNE = function(counts, apply_normalization = FALSE, perplexity = 30, seed = NULL){
-  set.seed(seed)
-  if(apply_normalization){
-    counts = Rtsne::normalize_input(counts)
+run_TSNE = function(counts, 
+                    apply_normalization = FALSE, 
+                    perplexity = 30, 
+                    seed = NULL, 
+                    column_id_var = "column_id",
+                    bfc = getOption("TSNE_BFC", BiocFileCache::BiocFileCache())){
+  rname = digest_args(to_ignore = c("bfc", "column_id"))
+  
+  .run_TSNE_FUN = function(){
+    set.seed(seed)
+    if(apply_normalization){
+      counts = Rtsne::normalize_input(counts)
+    }
+    if(perplexity > ncol(counts)/4){
+      warning("auto reducing perplexity")
+      perplexity = round(ncol(counts)/4)
+    }
+    tsne_res = Rtsne::Rtsne(t(counts), perplexity = perplexity, num_threads = getOption("mc.cores", 1), check_duplicates = FALSE)
+    set.seed(NULL)
+    tsne_res
   }
-  if(perplexity > ncol(counts)/4){
-    warning("auto reducing perplexity")
-    perplexity = round(ncol(counts)/4)
-  }
-  tsne_res = Rtsne::Rtsne(t(counts), perplexity = perplexity, num_threads = getOption("mc.cores", 1), check_duplicates = FALSE)
-  set.seed(NULL)
+  tsne_res = bfcif(bfc = bfc, 
+                   rname = rname, 
+                   FUN = .run_TSNE_FUN)
+  
+  
   
   tsne_df = as.data.table(tsne_res$Y)
   colnames(tsne_df) = c("tx", "ty")
-  tsne_df$column_id = colnames(counts)
+  tsne_df[[column_id_var]] = colnames(counts)
   rownames(tsne_df) = colnames(counts)
   tsne_df
 }
@@ -147,16 +245,18 @@ run_TSNE = function(counts, apply_normalization = FALSE, perplexity = 30, seed =
 #' et = expTSNE.load(ex_data)
 #' et.ran = expTSNE.runTSNE(et)
 expTSNE.runTSNE = function(et){
-  tsne_df = run_TSNE(et@norm_counts[et@selected_rows, et@selected_columns], perplexity = et@perplexity, seed = et@seed)
+  tsne_df = run_TSNE(et@norm_counts[et$selected_rows, et$selected_columns], perplexity = et$perplexity, seed = et$seed, column_id_var = et$column_id_var)
   new("expTSNE", 
       tsne_result = tsne_df,
-      raw_counts = et@raw_counts,
-      norm_counts = et@norm_counts,
-      meta_data = et@meta_data,
-      perplexity = et@perplexity,
-      seed = et@seed,
-      selected_rows = et@selected_rows,
-      selected_columns = et@selected_columns)
+      raw_counts = et$raw_counts,
+      norm_counts = et$norm_counts,
+      norm_description = et$norm_description,
+      meta_data = et$meta_data,
+      perplexity = et$perplexity,
+      seed = et$seed,
+      selected_rows = et$selected_rows,
+      selected_columns = et$selected_columns,
+      column_id_var = et$column_id_var)
 }
 
 #' expTSNE.save
@@ -241,14 +341,14 @@ expTSNE.load = function(save_dir){
   if(file.exists(file.path(save_dir, "tsne_result.csv"))){
     tsne_result = read.table(file.path(save_dir, "tsne_result.csv"), sep = ",", as.is = TRUE, check.names = FALSE)
     new("expTSNE",
-      raw_counts = raw_counts,
-      norm_counts = norm_counts, 
-      meta_data = meta_data, 
-      perplexity = perplexity, 
-      seed = seed, 
-      selected_rows = selected_rows, 
-      selected_columns = selected_columns,
-      tsne_result = tsne_result
+        raw_counts = raw_counts,
+        norm_counts = norm_counts, 
+        meta_data = meta_data, 
+        perplexity = perplexity, 
+        seed = seed, 
+        selected_rows = selected_rows, 
+        selected_columns = selected_columns,
+        tsne_result = tsne_result
     )
   }else{
     expTSNE.input(

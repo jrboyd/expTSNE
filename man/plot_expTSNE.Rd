@@ -23,9 +23,6 @@ plot_expTSNE(
 
 \item{show_all_points_per_facet}{}
 }
-\value{
-
-}
 \description{
 Title
 }

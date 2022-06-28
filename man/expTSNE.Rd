@@ -13,8 +13,10 @@
 expTSNE.input(
   raw_counts,
   norm_counts = raw_counts,
+  norm_description = "normalized counts",
   meta_data = data.frame(column_id = colnames(raw_counts), row.names =
     colnames(raw_counts)),
+  column_id_var = "column_id",
   perplexity = 30,
   seed = 0,
   selected_rows = rownames(raw_counts),
@@ -33,19 +35,6 @@ expTSNE.load(save_dir)
 \item{save_dir}{}
 
 \item{overwrite}{if TRUE, overwrite contents of save_dir.}
-}
-\value{
-
-
-
-
-
-
-
-
-
-
-
 }
 \description{
 expTSNE.input

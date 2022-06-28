@@ -16,8 +16,8 @@
 plot_expTSNE = function(et, color_var = NULL, facet_var = NULL, color_palette = "Dark2", show_all_points_per_facet = TRUE){
   et = prep_expTSNE_for_gene(et, color_var)
   et = prep_expTSNE_for_gene(et, facet_var, bins = 4)
-  pdt = merge(et$tsne_result, et$meta_data, by = "column_id")
-  p = ggplot(pdt, aes_string(x = "tx", y = "ty", color = color_var, id = "column_id")) 
+  pdt = merge(et$tsne_result, et$meta_data, by = et$column_id_var)
+  p = ggplot(pdt, aes_string(x = "tx", y = "ty", color = color_var, id = et$column_id_var)) 
   
   if(is.null(color_var)){
     if(!is.null(facet_var)){
@@ -65,10 +65,10 @@ prep_expTSNE_for_gene = function(et, var, bins = 0){
   if(!var %in% colnames(et$meta_data) & var %in% rownames(et$norm_counts)){
     vals = et$norm_counts[var,]
     if(bins < 1){
-      et$meta_data[[var]] = vals[et$meta_data$column_id]   
+      et$meta_data[[var]] = vals[et$meta_data[[et$column_id_var]]]   
     }else{
       brks = quantile(vals, seq(0, bins)/bins)
-      et$meta_data[[var]] = cut(vals[et$meta_data$column_id], breaks = brks, include.lowest = TRUE)
+      et$meta_data[[var]] = cut(vals[et$meta_data[[et$column_id_var]]], breaks = brks, include.lowest = TRUE)
     }
   }
   et

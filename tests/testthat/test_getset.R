@@ -12,8 +12,8 @@ et.input.loaded = expTSNE.load(file.path(pkg_dir, "test_expTSNE.input"))
 et.tsne.loaded = expTSNE.load(file.path(pkg_dir, "test_expTSNE"))
 
 test_that("names", {
-  expect_equal(names(et.input.loaded), c("raw_counts", "norm_counts", "meta_data", "perplexity", "seed", "selected_rows", "selected_columns"))
-  expect_equal(names(et.tsne.loaded), c("raw_counts", "norm_counts", "meta_data", "perplexity", "seed", "selected_rows", "selected_columns", 'tsne_result'))
+  expect_equal(names(et.input.loaded), c("raw_counts", "norm_counts", "norm_description", "meta_data", "perplexity", "seed", "selected_rows", "selected_columns", "column_id_var"))
+  expect_equal(names(et.tsne.loaded), c("raw_counts", "norm_counts", "norm_description", "meta_data", "perplexity", "seed", "selected_rows", "selected_columns", "column_id_var", 'tsne_result'))
 })
 
 test_that("get input", {

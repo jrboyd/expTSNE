@@ -2,11 +2,13 @@
   c(
     "raw_counts",
     "norm_counts", 
+    "norm_description",
     "meta_data", 
     "perplexity", 
     "seed", 
     "selected_rows", 
-    "selected_columns"
+    "selected_columns",
+    "column_id_var"
   )
 }
 .names_expTSNE = function(x){
@@ -25,13 +27,15 @@ setMethod("names",
   if(!name %in% names(x)) stop(name, " is not a valid item in this ", class(x), ".")
   switch (name,
           raw_counts = x@raw_counts,
-          norm_counts = x@norm_counts, 
+          norm_counts = x@norm_counts,
+          norm_description = x@norm_description,
           meta_data = x@meta_data, 
           perplexity = x@perplexity, 
           seed = x@seed, 
           selected_rows = x@selected_rows, 
           selected_columns = x@selected_columns,
-          tsne_result = x@tsne_result
+          tsne_result = x@tsne_result,
+          column_id_var = x@column_id_var
   )
 }
 
@@ -50,6 +54,9 @@ setMethod("$",
           norm_counts = {
             x@norm_counts = value
           }, 
+          norm_description = {
+            x@norm_description = value
+          },
           meta_data = {
             x@meta_data = value
           }, 

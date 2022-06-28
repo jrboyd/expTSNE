@@ -11,5 +11,5 @@ LazyData: true
 Suggests:
 Depends: R (>= 3.6), ggplot2, data.table
 Imports: Rtsne, shiny
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 biocViews: Software, RNASeq, MultipleComparison, Sequencing, Visualization

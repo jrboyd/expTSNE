@@ -4,7 +4,14 @@
 \alias{run_TSNE}
 \title{run_TSNE}
 \usage{
-run_TSNE(counts, apply_normalization = FALSE, perplexity = 30, seed = NULL)
+run_TSNE(
+  counts,
+  apply_normalization = FALSE,
+  perplexity = 30,
+  seed = NULL,
+  column_id_var = "column_id",
+  bfc = getOption("TSNE_BFC", BiocFileCache::BiocFileCache())
+)
 }
 \arguments{
 \item{counts}{}
@@ -12,9 +19,6 @@ run_TSNE(counts, apply_normalization = FALSE, perplexity = 30, seed = NULL)
 \item{perplexity}{}
 
 \item{seed}{}
-}
-\value{
-
 }
 \description{
 run_TSNE

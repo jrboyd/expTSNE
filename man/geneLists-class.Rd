@@ -4,9 +4,6 @@
 \name{geneLists-class}
 \alias{geneLists-class}
 \title{geneLists}
-\value{
-
-}
 \description{
 geneLists
 }
