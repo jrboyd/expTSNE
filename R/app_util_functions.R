@@ -95,7 +95,7 @@ locate_genes_in_df = function(df, valid_genes){
     to_check = colnames(df)[get_column_classes(df) %in% c("character", "factor")]    
     gene_col = NULL
     for(tc in to_check){
-        if(any(toupper(df[[tc]]) %in% valid_genes)){
+        if(any(toupper(df[[tc]]) %in% toupper(valid_genes))){
             gene_col = tc
             break
         }
@@ -122,7 +122,7 @@ validate_genes_in_df = function(df, valid_genes, valid_var = "valid"){
     if(is.null(df[["gene_name"]])){
         df$gene_name = "missing"   
     }
-    df[[valid_var]] = df$gene_name %in% valid_genes
+    df[[valid_var]] = toupper(df$gene_name) %in% toupper(valid_genes)
     var = c("gene_name", "valid")
     
     df = df[, c(var, setdiff(colnames(df), var))]    

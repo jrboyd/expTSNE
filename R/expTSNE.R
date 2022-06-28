@@ -161,7 +161,7 @@ digest_args = function(env = parent.frame(), to_ignore = character(), ...){
 #' @param force_overwrite
 #'
 #' @return
-#' @import BiocFileCache
+#' @rawNamespace import(BiocFileCache, except = show)
 #'
 #' @examples
 bfcif = function(bfc, rname, FUN,
