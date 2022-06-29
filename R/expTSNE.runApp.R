@@ -109,7 +109,7 @@ expTSNE.server_module = function(id, et){
             label = "Gene List", 
             choices = c(names(gene_lists), "custom"), 
             inline = TRUE, 
-            selected = "PAM50")#,
+            selected = "All")#,
           # disabled((selectInput("sel_custom_gene_set", label = "Custom gene lists", choices = "")))
         )
       })

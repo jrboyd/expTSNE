@@ -43,12 +43,10 @@ runApp(list(
     
     expTSNE:::server_upload(
       id = "up1",
-      expression_data = expression_data, 
-      custom_gene_sets = custom_gene_sets)
+      expression_data = expression_data)
     
     expTSNE:::server_upload(
       id = "up2",
-      expression_data = expression_data, 
-      custom_gene_sets = custom_gene_sets)
+      expression_data = expression_data)
   }
 ))
