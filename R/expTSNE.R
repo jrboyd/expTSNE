@@ -195,6 +195,7 @@ bfcif = function(bfc, rname, FUN,
 #'
 #' @return
 #' @import Rtsne
+#' @export
 #' @examples
 #' ex_data = system.file("extdata/test_expTSNE.input", package = "expTSNE", mustWork = TRUE)
 #' et = expTSNE.load(ex_data)

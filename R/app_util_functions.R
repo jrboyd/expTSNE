@@ -137,7 +137,13 @@ sampleCap = function(x, n = 500){
     out
 }
 
-km_clust = function(tsne_res, k = 5, id_var = "column_id", x_var = "tx", y_var = "ty", nsamp = Inf){
+km_clust = function(tsne_res, 
+                    k = 5, 
+                    id_var = "column_id", 
+                    x_var = "tx", 
+                    y_var = "ty", 
+                    cluster_var = "cluster_id",
+                    nsamp = Inf){
     if(k < 2){
         k = 2
         warning("increasing nn to 2")
@@ -151,11 +157,17 @@ km_clust = function(tsne_res, k = 5, id_var = "column_id", x_var = "tx", y_var =
     mat = mat[, sampleCap(seq(ncol(mat)), nsamp)]
     
     km_res = kmeans(t(mat), centers = k)
-    tsne_res$cluster_id = paste("cluster", km_res$cluster[tsne_res[[id_var]]])
+    tsne_res[[cluster_var]] = paste("cluster", km_res$cluster[tsne_res[[id_var]]])
     tsne_res
 }
 
-h_clust = function(tsne_res, n_clust = 5, id_var = "column_id", x_var = "tx", y_var = "ty", nsamp = Inf){
+h_clust = function(tsne_res, 
+                   n_clust = 5, 
+                   id_var = "column_id", 
+                   x_var = "tx", 
+                   y_var = "ty", 
+                   cluster_var = "cluster_id",
+                   nsamp = Inf){
     if(n_clust < 2){
         n_clust = 2
         warning("increasing n_clust to 2")
@@ -171,12 +183,19 @@ h_clust = function(tsne_res, n_clust = 5, id_var = "column_id", x_var = "tx", y_
     h_res = hclust(dist(t(mat)))
     
     
-    tsne_res$cluster_id = paste("cluster", cutree(h_res, n_clust)[tsne_res[[id_var]]])
+    tsne_res[[cluster_var]] = paste("cluster", cutree(h_res, n_clust)[tsne_res[[id_var]]])
     tsne_res
 }
 
 #from seqtsne
-nn_clust = function(tsne_res, nn = 100, auto_nn_fraction = 5, id_var = "column_id", x_var = "tx", y_var = "ty", nsamp = Inf){
+nn_clust = function(tsne_res, 
+                    nn = 100, 
+                    auto_nn_fraction = 5, 
+                    id_var = "column_id", 
+                    x_var = "tx", 
+                    y_var = "ty", 
+                    cluster_var = "cluster_id",
+                    nsamp = Inf){
     if(nn < 2){
         nn = 2
         warning("increasing nn to 2")
@@ -220,8 +239,8 @@ nn_clust = function(tsne_res, nn = 100, auto_nn_fraction = 5, id_var = "column_i
     com <- km$membership
     names(com) <- km$names
     # browser()
-    com_dt = data.table(V1 = names(com), cluster_id = paste("cluster", com))
-    setnames(com_dt, "V1", id_var)
+    com_dt = data.table(V1 = names(com), V2 = paste("cluster", com))
+    setnames(com_dt, c("V1", "V2"), c(id_var, cluster_var))
     
     p_dt = merge(tsne_res, com_dt, by = id_var)
     
@@ -243,7 +262,6 @@ nn_clust = function(tsne_res, nn = 100, auto_nn_fraction = 5, id_var = "column_i
 
 #this is not used anywhere
 reinit_data = function(sel){
-    browser()
     sel = input$sel_data
     #meta data
     if(!sel %in% names(clinical_loaded)){

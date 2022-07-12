@@ -1,21 +1,21 @@
 
-run_tsne = function(expression_matrix, perplexity = 30, bfc = BiocFileCache()){
-  if(perplexity > ncol(expression_matrix)/4){
-    warning("auto reducing perplexity")
-    perplexity = round(ncol(expression_matrix)/4)
-  }
-  tsne_patient = bfcif(bfc, digest(list(expression_matrix, perplexity)), function(){
-    Rtsne::Rtsne(t(expression_matrix), 
-                 num_threads = 20, 
-                 check_duplicates = FALSE,
-                 perplexity = perplexity)    
-  })
-  
-  tsne_df = as.data.table(tsne_patient$Y)
-  colnames(tsne_df) = c("tx", "ty")
-  tsne_df$column_id = colnames(expression_matrix)
-  tsne_df
-}
+# run_tsne = function(expression_matrix, perplexity = 30, bfc = BiocFileCache()){
+#   if(perplexity > ncol(expression_matrix)/4){
+#     warning("auto reducing perplexity")
+#     perplexity = round(ncol(expression_matrix)/4)
+#   }
+#   tsne_patient = bfcif(bfc, digest(list(expression_matrix, perplexity)), function(){
+#     Rtsne::Rtsne(t(expression_matrix), 
+#                  num_threads = 20, 
+#                  check_duplicates = FALSE,
+#                  perplexity = perplexity)    
+#   })
+#   
+#   tsne_df = as.data.table(tsne_patient$Y)
+#   colnames(tsne_df) = c("tx", "ty")
+#   tsne_df$column_id = colnames(expression_matrix)
+#   tsne_df
+# }
 
 server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes, meta_data, code2type, FACET_VAR){
   ### Running t-sne
@@ -31,8 +31,7 @@ server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes
     gl = valid_genes()
     req(expr_mat)
     req(gl)
-    req(is.null(tsne_res()))
-    browser()
+    # req(is.null(tsne_res()))
     #choose dimensional reduction method, if possible
     if(ncol(expr_mat) < 3){
       showNotification("too_small")
@@ -47,8 +46,8 @@ server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes
       tsne_worked = TRUE
     }else if(length(gl) > 0){
       tsne_worked = tryCatch({
-        showNotification("run_tsne")
-        tsne_dt = run_tsne(expr_mat[gl,])    
+        showNotification(paste("run_tsne:",  nrow(expr_mat[gl,]), "rows x", ncol(expr_mat[gl,]), "columns"))
+        tsne_dt = run_TSNE(expr_mat[gl,])    
         TRUE
       }, error = function(e){
         FALSE
@@ -63,7 +62,6 @@ server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes
       tsne_dt[, tx := scales::rescale(tx, c(-.5, .5))]
       tsne_dt[, ty := scales::rescale(ty, c(-.5, .5))]
       tsne_res(tsne_dt) 
-      
     }else{
       showNotification("Need more valid genes/samples to run t-sne.", type = "error")
       tsne_res(NULL)
@@ -72,6 +70,7 @@ server_tsne = function(input, output, session, tsne_res, tsne_input, valid_genes
   
   ### Plot t-sne
   output$plot_tsne <- renderPlot({
+    browser()
     req(tsne_res())
     req(input$sel_facet_var)
     tsne_dt = tsne_res()

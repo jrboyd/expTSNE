@@ -17,12 +17,13 @@ if(!exists("et")){
   
   et = expTSNE.input(mrna_count_mat.full, log2(mrna_rpm_mat.full + .1), meta_data = meta_dt, norm_description = "log2 of RPM")
   et = expTSNE.runTSNE(et)
-}
-# expTSNE.runApp(et)
+} 
+expTSNE.runApp(et, display.mode="showcase")
 
 # et@meta_data$column_id = et@meta_data$sample_id
 
 expTSNE::plot_expTSNE(et, color_var = "cluster_id", facet_var = "ik_status")
+nn_clust = expTSNE:::nn_clust
 
 runApp(list(
   ui = fluidPage(
@@ -31,7 +32,9 @@ runApp(list(
     shinyjs::useShinyjs(),
     titlePanel("TCGA t-sne"),
     expTSNE:::ui_upload(id = "up1"),
-    expTSNE:::ui_upload(id = "up2")
+    expTSNE:::ui_point_selection(n_items = ncol(et$raw_counts)),
+    expTSNE:::ui_goi()
+    # expTSNE:::ui_upload(id = "up2")
   ), 
   
   
@@ -43,10 +46,19 @@ runApp(list(
     
     expTSNE:::server_upload(
       id = "up1",
-      expression_data = expression_data)
+      expression_data = expression_data
+    )
     
-    expTSNE:::server_upload(
-      id = "up2",
-      expression_data = expression_data)
+    # tsne_clust, meta_data, tsne_res
+    meta_data = reactiveVal(et$meta_data)
+    tsne_res = reactiveVal(as.data.table(et$tsne_result))
+    tsne_clust = reactiveVal()
+    # expTSNE:::server_point_selection(tsne_res = tsne_res, meta_data = meta_data, tsne_clust = tsne_clust)
+    expTSNE:::server_point_selection(tsne_res = tsne_res, meta_data = meta_data, tsne_clust = tsne_clust)
+    expTSNE:::server_goi()
+    # expTSNE:::server_upload(
+    #   id = "up2",
+    #   expression_data = expression_data
+    # )
   }
 ))

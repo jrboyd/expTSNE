@@ -130,6 +130,7 @@ expTSNE.server_module = function(id, et){
       ## watch gene inputs
       observeEvent({
         input$sel_gene_list
+        input$sel_custom_gene_set
         # input$txt_genes
       }, {
         sel = input$sel_gene_list
@@ -155,7 +156,7 @@ expTSNE.server_module = function(id, et){
           selected = active_sample_types)
       })
       
-      
+
       
       
       ##
@@ -194,7 +195,7 @@ expTSNE.server_module = function(id, et){
         
         missed = setdiff(gl, rownames(expression_data()))
         if(length(missed) > 0){
-          showNotification(paste("genes not present in TCGA:", paste(missed, collapse = ", ")), type = "warning")
+          showNotification(paste("genes not present in expression:", paste(missed, collapse = ", ")), type = "warning")
         }
         valid_genes(setdiff(gl, missed))
       })
@@ -219,20 +220,129 @@ expTSNE.server_module = function(id, et){
         showNotification(paste(length(gls), " custom gene sets"))
       })
       
-      
-      
-      
+      #### app_module_expression_matrix ####
       #running tsne
-      server_expression_matrix(input, output, session,
-                               et,
-                               active_dataset,
-                               dataset_downstream,
-                               expression_data,
-                               meta_data,
-                               tsne_input,
-                               tsne_res)
+      # server_expression_matrix(
+      #   input, output, session,
+      #                          et,
+      #                          active_dataset,
+      #                          dataset_downstream,
+      #                          expression_data,
+      #                          meta_data,
+      #                          tsne_input,
+      #                          tsne_res)
+      observeEvent({
+        active_dataset()
+      }, {
+        et = active_dataset()
+        expression_data(et$norm_counts)
+        meta_data(et$meta_data)
+        
+        #reset downstream
+        for(rv in dataset_downstream){
+          rv(NULL)
+        }
+      })
       
-      server_tsne(input, output, session, tsne_res, tsne_input, valid_genes, meta_data, code2type, FACET_VAR)
+      observe({
+        showNotification(paste0("expression: ", nrow(expression_data()), " rows x ", ncol(expression_data()), " columns loaded."))
+      })
+      #### ####
+      #### app_module_tsne ####
+      # server_tsne(
+      #   input, 
+      #   output,
+      #   session, 
+      #   tsne_res, 
+      #   tsne_input, 
+      #   valid_genes, 
+      #   meta_data, 
+      #   code2type, 
+      #   FACET_VAR)
+      
+      observeEvent({
+        # expression_data()
+        tsne_input()
+        valid_genes()
+        tsne_res()
+      }, {
+        showNotification("server_tsne")
+        expr_mat = tsne_input()
+        gl = valid_genes()
+        req(expr_mat)
+        req(gl)
+        # req(is.null(tsne_res()))
+        #choose dimensional reduction method, if possible
+        if(ncol(expr_mat) < 3){
+          showNotification("too_small")
+          showNotification("Too few samples for dimensional reduction.", type = "error")
+          tsne_worked = FALSE
+        }else if(ncol(expr_mat) < 20){
+          browser()
+          showNotification("run_PCA")
+          pc = prcomp(expr_mat[gl,])
+          tsne_dt = as.data.table(pc$rotation[,1:2], keep.rownames = TRUE)[, c(2:3, 1)]
+          setnames(tsne_dt, c("rn", "PC1", "PC2"), c("column_id", "tx", "ty"))
+          tsne_worked = TRUE
+        }else if(length(gl) > 0){
+          tsne_worked = tryCatch({
+            showNotification(paste("run_tsne:",  nrow(expr_mat[gl,]), "rows x", ncol(expr_mat[gl,]), "columns"))
+            tsne_dt = run_TSNE(expr_mat[gl,])    
+            TRUE
+          }, error = function(e){
+            FALSE
+          })
+        }else{
+          tsne_worked = FALSE
+        }
+        
+        if(tsne_worked){
+          meta_dt = meta_data()
+          tsne_dt = merge(tsne_dt, meta_dt, by = "column_id")
+          tsne_dt[, tx := scales::rescale(tx, c(-.5, .5))]
+          tsne_dt[, ty := scales::rescale(ty, c(-.5, .5))]
+          tsne_res(tsne_dt) 
+        }else{
+          showNotification("Need more valid genes/samples to run t-sne.", type = "error")
+          tsne_res(NULL)
+        }
+      })
+      
+      ### Plot t-sne
+      output$plot_tsne <- renderPlot({
+        req(tsne_res())
+        req(input$sel_facet_var)
+        browser()
+        tsne_dt = tsne_res()
+        tsne_dt = merge(tsne_dt, meta_data(), by = "column_id")
+        if(input$sel_color_by ==  FACET_VAR$NONE){
+          p = ggplot(tsne_dt, aes_string(x = "tx", y = "ty")) 
+        }else{
+          p = ggplot(tsne_dt, aes_string(x = "tx", y = "ty", color = input$sel_color_by))     
+        }
+        
+        if(input$sel_facet_var != FACET_VAR$NONE){
+          p = p + annotate("point", x= tsne_dt$tx, y = tsne_dt$ty, color = 'gray70', size = .3)
+        }
+        p = p + 
+          geom_point() + 
+          coord_fixed() +
+          labs(x = "", y = "", title = "t-sne of TCGA samples", subtitle = paste(input$sel_gene_list, "gene list")) +
+          theme(panel.background = element_blank(),
+                panel.grid = element_blank())
+        if(input$sel_facet_var != FACET_VAR$NONE){
+          p = p + facet_wrap(paste0("~", input$sel_facet_var))
+        }
+        # }else if(input$sel_facet_var == FACET_VAR$SAMPLE_TYPE){
+        #     p + facet_wrap(~sample_type)
+        # }else if(input$sel_facet_var == FACET_VAR$PAM50){
+        #     p + facet_wrap(~pam_call)
+        # }else{
+        #     stop("unrecognized input$sel_facet_var: ", input$sel_facet_var)
+        # }
+        p
+      })
+      #### ####
       
       #the gene expression mapped to tsne space
       server_gene_xy(input, output, session, tsne_res, expression_data, vis_gene, norm_description = et$norm_description)
@@ -356,7 +466,7 @@ expTSNE.server_module = function(id, et){
 #' ex_data = system.file("extdata/test_expTSNE", package = "expTSNE", mustWork = TRUE)
 #' et = expTSNE.load(ex_data)
 #' expTSNE.runApp(et)
-expTSNE.runApp = function(et){
+expTSNE.runApp = function(et, ...){
   # Define UI for application that draws a histogram
   ui <- fluidPage(
     theme = "bootstrap.css",
@@ -370,5 +480,5 @@ expTSNE.runApp = function(et){
     expTSNE.server_module("TSNE_panel", et)
   }
   
-  shiny::runApp(list(ui = ui, server = server))
+  shiny::runApp(list(ui = ui, server = server), ...)
 }
